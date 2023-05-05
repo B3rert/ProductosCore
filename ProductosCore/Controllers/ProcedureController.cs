@@ -1,37 +1,44 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using System.Data.SqlClient;
-using System.Data;
 using ProductosCore.Models;
+using System.Data;
+using System.Data.SqlClient;
 
 namespace ProductosCore.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ConsultasController : ControllerBase
+    public class ProcedureController : ControllerBase
     {
         //cadena de coneccion
         private readonly string _connectionString;
 
-        public ConsultasController(IConfiguration configuration)
+        public ProcedureController(IConfiguration configuration)
         {
             //asignar la cadena de coneccion de appsettings.json
             _connectionString = configuration.GetConnectionString("ConnectionString");
         }
 
+
         //Eleminar un recurso
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
+            //Manejo de errores
             try
             {
-
+                //sql 
                 using (SqlConnection sql = new SqlConnection(_connectionString))
                 {
-                    using (SqlCommand cmd = new SqlCommand($"DELETE FROM\r\n  Productos\r\nWHERE\r\n  pro_codigo = {id}", sql))
+                    //comando sql (consulta)
+                    using (SqlCommand cmd = new SqlCommand("DELETE_PRODUCT", sql))
                     {
-                        //Tipo del comando 
-                        cmd.CommandType = CommandType.Text;
+                        //Tipo de comando procedimiento almacenado
+                        cmd.CommandType = CommandType.StoredProcedure;
+
+                        //Parametros
+                        cmd.Parameters.Add("@pro_codigo", SqlDbType.Int).Value = id;
+                       
 
                         //Abrir la conexion
                         await sql.OpenAsync();
@@ -42,16 +49,11 @@ namespace ProductosCore.Controllers
                         //si el comando se ejecuta correctamente
                         return Ok(id);
                     }
-
                 }
-
             }
             catch (Exception e)
             {
-
-
-                //si el comando no se ejecuta correctamente
-
+                //retornar error
                 return BadRequest(e.Message);
             }
         }
@@ -60,18 +62,23 @@ namespace ProductosCore.Controllers
         [HttpPut]
         public async Task<IActionResult> PutProduct([FromBody] ProductModel product)
         {
-
             //Manejo de errores
             try
             {
-                //conexion de sql 
+                //sql 
                 using (SqlConnection sql = new SqlConnection(_connectionString))
                 {
-                    using (SqlCommand cmd = new SqlCommand(
-                        $"  UPDATE\r\n  Productos\r\nSET\r\n  pro_nombre = '{product.ProNombre}',\r\n  pro_descripcion = '{product.ProDescripcion}',\r\n  pro_precio = {product.ProPrecio}\r\nWHERE\r\n  pro_codigo = {product.ProCodigo}", sql))
+                    //comando sql (consulta)
+                    using (SqlCommand cmd = new SqlCommand("PUT_PRODUCT", sql))
                     {
-                        //Tipo del comando 
-                        cmd.CommandType = CommandType.Text;
+                        //Tipo de comando procedimiento almacenado
+                        cmd.CommandType = CommandType.StoredProcedure;
+
+                        //Parametros
+                        cmd.Parameters.Add("@pro_codigo", SqlDbType.Int).Value = product.ProCodigo;
+                        cmd.Parameters.Add("@pro_nombre", SqlDbType.VarChar).Value = product.ProNombre;
+                        cmd.Parameters.Add("@pro_descripcion", SqlDbType.VarChar).Value = product.ProDescripcion;
+                        cmd.Parameters.Add("@pro_precio", SqlDbType.Decimal).Value = product.ProPrecio;
 
                         //Abrir la conexion
                         await sql.OpenAsync();
@@ -81,54 +88,36 @@ namespace ProductosCore.Controllers
 
                         //si el comando se ejecuta correctamente
                         return Ok(product);
-
-
                     }
-
                 }
             }
             catch (Exception e)
             {
-
-
-                //si el comando no se ejecuta correctamente
-
-
+                //retornar error
                 return BadRequest(e.Message);
             }
-
         }
 
-        //Crear un nuvo producto
-        [HttpPost]
+            //Crear un producto 
+            [HttpPost]
         public async Task<IActionResult> PostProduct([FromBody] ProductModel product)
         {
-
             //Manejo de errores
             try
             {
-
-                //Conexion sql server
+                //sql 
                 using (SqlConnection sql = new SqlConnection(_connectionString))
                 {
-                    //Comando sql
-                    using (SqlCommand cmd = new SqlCommand(
-                        "INSERT INTO Productos " +
-                        "(" +
-                        "pro_nombre, " +
-                        "pro_descripcion, " +
-                        "pro_precio" +
-                        ")" +
-                        "VALUES" +
-                        "(" +
-                        $"'{product.ProNombre}', " +
-                        $"'{product.ProDescripcion}', " +
-                        $"{product.ProPrecio}" +
-                        ")", sql))
+                    //comando sql (consulta)
+                    using (SqlCommand cmd = new SqlCommand("POST_PRODUCT", sql))
                     {
+                        //Tipo de comando procedimiento almacenado
+                        cmd.CommandType = CommandType.StoredProcedure;
 
-                        //Tipo de comando
-                        cmd.CommandType = CommandType.Text;
+                        //Parametros
+                        cmd.Parameters.Add("@pro_nombre", SqlDbType.VarChar).Value = product.ProNombre;
+                        cmd.Parameters.Add("@pro_descripcion", SqlDbType.VarChar).Value = product.ProDescripcion;
+                        cmd.Parameters.Add("@pro_precio", SqlDbType.Decimal).Value = product.ProPrecio;
 
                         //Abrir la conexion
                         await sql.OpenAsync();
@@ -138,50 +127,45 @@ namespace ProductosCore.Controllers
 
                         //si el comando se ejecuta correctamente
                         return Ok(product);
-
                     }
-
                 }
-
             }
-            catch (Exception e)
+            catch (Exception e )
             {
-
-                //si el comando no se ejecuta correctamente
-
-
+                //retornar error
                 return BadRequest(e.Message);
             }
-           
+
         }
 
 
-        //Obtener todos los prodcutos
+        //obtener productos
         [HttpGet]
         public async Task<IActionResult> GetProducts()
         {
             //Manejo de errores
             try
             {
-                //Abrir conexion
+                //sql 
                 using (SqlConnection sql = new SqlConnection(_connectionString))
                 {
-                    //Comando sql 
-                    using (SqlCommand cmd = new SqlCommand("SELECT * FROM Productos", sql))
+                    //comando sql nombre del procedimiento  
+                    using (SqlCommand cmd = new SqlCommand("GET_PRODUCTS", sql))
                     {
-                        //Tipo de comando 
-                        cmd.CommandType = CommandType.Text;
+                        //Tipo de comando procedimiento almacenadi 
+                        cmd.CommandType = CommandType.StoredProcedure;
+
 
                         //guaradr mis valores
-                        List<ProductModel> products = new List<ProductModel>(); 
+                        List<ProductModel> products = new List<ProductModel>();
 
                         //abir la coneccion
                         await sql.OpenAsync();
 
                         //Ejucutar la consulta
-                        using (var reader = await cmd.ExecuteReaderAsync() )
+                        using (var reader = await cmd.ExecuteReaderAsync())
                         {
-                            while ( await reader.ReadAsync())
+                            while (await reader.ReadAsync())
                             {
 
                                 products.Add(MapToValue(reader));
@@ -190,24 +174,28 @@ namespace ProductosCore.Controllers
                         }
 
                         return Ok(products);
+
+
                     }
                 }
 
             }
             catch (Exception e)
             {
+
                 return BadRequest(e.Message);
             }
         }
+
 
         private ProductModel MapToValue(SqlDataReader reader)
         {
             return new ProductModel()
             {
-                ProCodigo =         (int)reader["pro_codigo"],
-                ProNombre =         (string)reader["pro_nombre"],
-                ProDescripcion =    (string)reader["pro_descripcion"],
-                ProPrecio =         (decimal)reader["pro_precio"],
+                ProCodigo = (int)reader["pro_codigo"],
+                ProNombre = (string)reader["pro_nombre"],
+                ProDescripcion = (string)reader["pro_descripcion"],
+                ProPrecio = (decimal)reader["pro_precio"],
             };
         }
     }
